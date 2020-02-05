@@ -1,11 +1,11 @@
 import os
 import shutil
 
-#v
-inputVariables = ['trk_pt', 'trk_eta', 'trk_dxy', 'trk_dz', 'trk_dxyClosestPV', 'trk_dzClosestPV', 'trk_ptErr',
-                  'trk_etaErr', 'trk_dxyErr', 'trk_dzErr', 'trk_nChi2', 'trk_ndof', 'trk_nLost', 'trk_nPixel',
-                  'trk_nStrip']
-
+#List of inputVariables. Note however that "trk_algo" is treated separately, since
+#it does not make sense to apply for example preprocessing clipping to those values.
+inputVariables = ['trk_pt', 'trk_eta', 'trk_dxy', 'trk_dz', 'trk_dxyClosestPV',
+                  'trk_dzClosestPV', 'trk_ptErr', 'trk_etaErr', 'trk_dxyErr', 'trk_dzErr',
+                  'trk_nChi2', 'trk_ndof', 'trk_nLost', 'trk_nPixel', 'trk_nStrip']
 
 def createFolders(listOfFolders):
     for dir in listOfFolders:

@@ -18,28 +18,27 @@ def main():
     createFolders(["plots"])
 
     path = "~/QCD_Flat_15_7000_correct/"
-    QCD = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
-    QCDTrain, _ = splitToTrainAndTest(QCD, frac=0.0)
+    QCDTrain = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
     weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
 
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
 
-    ttbarTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
+    QCDTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
 
     means, scales = preproc.getMeansAndScales()
 
     #The outputs of these printouts are to be used as the cutoff values when evaluating the
     #deployed model in CMSSW. See RecoTracker/FinalTrackSelectors/plugins/TrackTFClassifier.cc
-    print(list(QCDTrain))
+    print(preproc.variableNamesToClip)
     print("Upper cutoffs: ", np.round(preproc.upperThresholds.to_numpy(), 3).tolist())
     print("Lower cutoffs: ", np.round(preproc.lowerThresholds.to_numpy(), 3).tolist())
 
-    classifier = createClassifier(len(ttbarTrainPreprocessed.columns), means, scales)
+    classifier = createClassifier(len(QCDTrainPreprocessed.columns), means, scales)
     classifier.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3, amsgrad=True),
                        metrics=[tf.keras.metrics.AUC(name="auc")],
                        loss="mse")
-    classifier.fit(ttbarTrainPreprocessed.to_numpy(),
+    classifier.fit(QCDTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
                    epochs=50,

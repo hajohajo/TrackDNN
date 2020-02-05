@@ -70,6 +70,7 @@ class preprocessor():
         self.fitCalled = True
         self.lowerThresholds = dataframe.loc[:, inputVariables].quantile(self.lowerQuantile)
         self.upperThresholds = dataframe.loc[:, inputVariables].quantile(self.upperQuantile)
+        self.variableNamesToClip = inputVariables
         self.scaler.fit(dataframe)
 
     def process(self, dataframe):

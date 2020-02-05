@@ -8,6 +8,7 @@ def getSamples(listOfNames):
                      'trk_algo']
     if "QCD" in listOfNames[0]:
         dataframe = read_root(listOfNames, columns=columnsToRead, flatten=columnsToRead)
+        dataframe.drop("__array_index", axis=1, inplace=True)
     else:
         dataframe = read_root(listOfNames, columns=columnsToRead)
 
