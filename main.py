@@ -29,10 +29,9 @@ def main():
 
     means, scales = preproc.getMeansAndScales()
 
-    print(QCDTrain.columns)
-
     #The outputs of these printouts are to be used as the cutoff values when evaluating the
     #deployed model in CMSSW. See RecoTracker/FinalTrackSelectors/plugins/TrackTFClassifier.cc
+    print(list(QCDTrain))
     print("Upper cutoffs: ", np.round(preproc.upperThresholds.to_numpy(), 3).tolist())
     print("Lower cutoffs: ", np.round(preproc.lowerThresholds.to_numpy(), 3).tolist())
 
@@ -43,7 +42,7 @@ def main():
     classifier.fit(ttbarTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
-                   epochs=5,
+                   epochs=50,
                    batch_size=1024,
                    validation_split=0.1)
 
