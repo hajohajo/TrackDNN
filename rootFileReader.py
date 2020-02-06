@@ -6,7 +6,10 @@ def getSamples(listOfNames):
     columnsToRead = ['trk_isTrue', 'trk_mva', 'trk_pt', 'trk_eta', 'trk_dxy', 'trk_dz', 'trk_dxyClosestPV', 'trk_dzClosestPV', 'trk_ptErr',
                      'trk_etaErr', 'trk_dxyErr', 'trk_dzErr', 'trk_nChi2', 'trk_ndof', 'trk_nLost', 'trk_nPixel', 'trk_nStrip',
                      'trk_algo']
-    if "QCD" in listOfNames[0]:
+
+    #test if the root file is a flattened nTuple or not. Not a very pretty test
+    notFlat = hasattr(read_root(listOfNames[0], columns=columnsToRead, chunksize=1).__iter__().__next__().loc[0, "trk_isTrue"], "__len__")
+    if notFlat:
         dataframe = read_root(listOfNames, columns=columnsToRead, flatten=columnsToRead)
         dataframe.drop("__array_index", axis=1, inplace=True)
     else:
