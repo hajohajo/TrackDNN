@@ -43,12 +43,14 @@ def domainAdaptationWeights(dataframe, targetPath):
 
         sampleWeights = [reweightingFactorPerBin[i] for i in dataframeIndexed]
 
-        totalSampleWeights = totalSampleWeights+sampleWeights
+        totalSampleWeights = totalSampleWeights+sampleWeights/np.max(sampleWeights)
 
     #Additionally a small factors to account for the true-fake imbalance in the dataset
     #and the imbalance between different algos
     trueFakeWeights = compute_sample_weight('balanced', dataframe.trk_isTrue)
     algoWeights = compute_sample_weight('balanced', dataframe.trk_algo)
+    trueFakeWeights = trueFakeWeights/np.max(trueFakeWeights)
+    algoWeights = algoWeights/np.max(algoWeights)
 
     totalSampleWeights = totalSampleWeights + trueFakeWeights + algoWeights
     return totalSampleWeights

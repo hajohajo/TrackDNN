@@ -10,10 +10,9 @@ sns.set()
 def createClassifierPlots(classifier, preproc):
     samplePathToName = {'datasets/T1tttt.root': 'T1tttt', 'datasets/T5qqqqWW.root': 'T5qqqqWW', 'datasets/QCD_flat_small.root': 'QCD'}
     listOfSamplePaths = ['datasets/T1tttt.root', 'datasets/T5qqqqWW.root', 'datasets/QCD_flat_small.root']
-
     for samplePath in listOfSamplePaths:
         name = samplePathToName[samplePath]
-        sample = getSamples(samplePath)
+        sample = getSamples([samplePath])
         samplePreprocessed = preproc.process(sample.loc[:, inputVariables+["trk_algo"]])
         sample.loc[:, "trk_dnn"] = 2*classifier.predict(samplePreprocessed)-1.0
 

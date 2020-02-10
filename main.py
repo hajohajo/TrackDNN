@@ -12,18 +12,30 @@ pd.set_option('display.width', None)
 
 tf.compat.v2.enable_v2_behavior()
 
+import tensorflow_addons as tfa
+
 def main():
+    # adam = tfa.optimizers.RectifiedAdam(lr=1e-3,
+    #     total_steps=10000,
+    #     warmup_proportion=0.1,
+    #     min_lr=1e-5)
+
+    adam = tfa.optimizers.LAMB()
+
     print("Begin program")
+
 
     createFolders(["plots"])
 
     path = "~/QCD_Flat_15_7000_correct/"
     QCDTrain = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
+    # QCDTrain = QCDTrain.sample(n=100000)
     weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
 
-    QCDTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
+    # QCDTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
+    QCDTrainPreprocessed = QCDTrain.loc[:, inputVariables+["trk_algo"]]
 
     means, scales = preproc.getMeansAndScales()
 
@@ -34,15 +46,20 @@ def main():
     print("Lower cutoffs: ", np.round(preproc.lowerThresholds.to_numpy(), 3).tolist())
 
     classifier = createClassifier(len(QCDTrainPreprocessed.columns), means, scales)
-    classifier.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3, amsgrad=True),
+    # classifier.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3, amsgrad=True),
+    classifier.compile(optimizer=adam,
                        metrics=[tf.keras.metrics.AUC(name="auc")],
-                       loss="mse")
+                       # loss="mse")
+                       loss = "binary_crossentropy")
+
+    print(weights)
     classifier.fit(QCDTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
-                   epochs=50,
-                   batch_size=1024,
-                   validation_split=0.1)
+                   epochs=20,
+                   batch_size=16384,
+                   # validation_split=0.5)
+                   validation_split = 0.1)
 
     #Saving model in case later need for additional plotting arises
     classifier.save('./model.h5')

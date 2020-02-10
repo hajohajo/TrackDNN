@@ -1,7 +1,8 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, BatchNormalization, Dropout
+from tensorflow.keras.layers import Dense, Dropout, AlphaDropout
 import numpy as np
 
+from tensorflow.keras.activations import selu
 
 #Swish function has been found useful in vanilla dense networks.
 #Works well in this case. https://arxiv.org/pdf/1710.05941v1.pdf
@@ -32,18 +33,17 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 #Convenience function to create the classifier network.
 #makes playing around with hyperparameters easier.
 def createClassifier(nInputs, means, scales):
-    _initializer = "glorot_normal"
-    _regularizer = tf.keras.regularizers.l2(0.0) #(1e-4)
-    _activation = swish
-    _neurons = 64
-    _blocks = 5
+    _initializer = "lecun_normal"
+    # _regularizer = tf.keras.regularizers.l2(1e-2)
+    _activation = selu
+    _neurons = 32
+    _blocks = 20
     _rate = 0.1
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
     x = StandardScalerLayer(means, scales, name="Input")(inputs)
     for i in range(_blocks):
-        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, kernel_regularizer=_regularizer)(x)
-        x = BatchNormalization()(x)
-        x = Dropout(_rate)(x)
+        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer)(x)
+        x =AlphaDropout(_rate)(x)
     outputs = Dense(1, activation="sigmoid", name="classifierOutput")(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="classifier")
