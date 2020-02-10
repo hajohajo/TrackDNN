@@ -8,7 +8,8 @@ def getSamples(listOfNames):
                      'trk_algo']
 
     #test if the root file is a flattened nTuple or not. Not a very pretty test
-    notFlat = hasattr(read_root(listOfNames[0], columns=columnsToRead, chunksize=1).__iter__().__next__().loc[0, "trk_isTrue"], "__len__")
+    t_ = read_root(listOfNames[0], columns=["trk_isTrue"], chunksize=1).__iter__().__next__()
+    notFlat = hasattr(t_.loc[t_.index.values[0], "trk_isTrue"], "__len__")
     if notFlat:
         dataframe = read_root(listOfNames, columns=columnsToRead, flatten=columnsToRead)
         dataframe.drop("__array_index", axis=1, inplace=True)
