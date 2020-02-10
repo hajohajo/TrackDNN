@@ -71,7 +71,10 @@ class preprocessor():
         self.lowerThresholds = dataframe.loc[:, inputVariables].quantile(self.lowerQuantile)
         self.upperThresholds = dataframe.loc[:, inputVariables].quantile(self.upperQuantile)
         self.variableNamesToClip = inputVariables
-        self.scaler.fit(dataframe)
+
+        clipped = dataframe.loc[:, inputVariables].clip(self.lowerThresholds, self.upperThresholds, axis=1)
+        clipped.loc[:, "trk_algo"] = dataframe.trk_algo
+        self.scaler.fit(clipped)
 
     def process(self, dataframe):
         if not self.fitCalled:
