@@ -1,9 +1,39 @@
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PowerTransformer
 from sklearn.utils import compute_sample_weight
 from utilities import inputVariables
 from rootFileReader import getSamples
 import numpy as np
+import pandas as pd
 import sys
+
+def featureBalancingWeights(dataframe):
+    transformedFrame = pd.DataFrame(PowerTransformer().fit_transform(dataframe.loc[:, inputVariables]), columns=inputVariables)
+    totalSampleWeights = np.zeros(dataframe.shape[0])
+    for variable in inputVariables:
+        input = transformedFrame.loc[:, variable]
+        minimum = np.min(input)
+        maximum = np.max(input)
+        binning = np.linspace(minimum, maximum, 11)
+        dataframeIndexed = np.digitize(input, binning, right=True)
+
+        weights = compute_sample_weight('balanced', dataframeIndexed)
+        weights = weights/np.max(weights)
+
+        totalSampleWeights = np.add(totalSampleWeights, weights)
+
+
+    #Additionally a small factors to account for the true-fake imbalance in the dataset
+    #and the imbalance between different algos
+    trueFakeWeights = compute_sample_weight('balanced', dataframe.trk_isTrue)
+    algoWeights = compute_sample_weight('balanced', dataframe.trk_algo)
+    trueFakeWeights = trueFakeWeights/np.max(trueFakeWeights)
+    algoWeights = algoWeights/np.max(algoWeights)
+
+    totalSampleWeights = totalSampleWeights + trueFakeWeights + algoWeights
+    print("min: {}, max: {}, std.dev: {}".format(np.round(np.min(totalSampleWeights), 3),
+                                                 np.round(np.max(totalSampleWeights), 3),
+                                                 np.round(np.std(totalSampleWeights), 3)))
+    return totalSampleWeights
 
 #For each variable, calculate per sample weights that transfer the training sample
 #distribution to the target samples distribution. Note: the target has been chosen
@@ -15,9 +45,9 @@ def domainAdaptationWeights(dataframe, targetPath):
 
     totalSampleWeights = np.zeros(dataframe.shape[0])
     for variable in inputVariables:
-        minimum = np.min(dataframe.loc[:, variable])
-        maximum = np.max(dataframe.loc[:, variable])
         input = dataframe.loc[:, variable]
+        minimum = np.min(input)
+        maximum = np.max(input)
         clippedTarget = np.clip(target.loc[:, variable], minimum, maximum)
         edges = np.quantile(input, quantiles)
         binning = np.insert(edges, 0, minimum)
