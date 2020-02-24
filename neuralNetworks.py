@@ -9,6 +9,31 @@ from tensorflow.keras.activations import selu
 def swish(x, beta = 1.0):
     return (x * tf.keras.activations.sigmoid(beta * x))
 
+
+
+class InputSanitizerLayer(tf.keras.layers.Layer):
+    def __init__(self, means, scale, minValues, maxValues, **kwargs):
+        self.minValues = minValues
+        self.maxValues = maxValues
+        self.means = means
+        self.scale = scale
+
+        self.tensorMeans = tf.convert_to_tensor(np.reshape(self.means, (1, self.means.shape[-1])), dtype='float32')
+        self.invertedScale = tf.convert_to_tensor(1.0 / np.reshape(self.scale, (1, self.scale.shape[-1])), dtype='float32')
+        self.tensorMins = tf.convert_to_tensor(np.reshape(self.minValues, (1, self.minValues.shape[-1])), dtype='float32')
+        self.tensorMaxs = tf.convert_to_tensor(np.reshape(self.maxValues, (1, self.maxValues.shape[-1])), dtype='float32')
+        super(InputSanitizerLayer, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        super(InputSanitizerLayer, self).build(input_shape)
+
+    def call(self, input):
+        return tf.math.multiply((tf.math.maximum(tf.math.minimum(input, self.tensorMaxs), self.tensorMins)-self.tensorMeans), self.invertedScale)
+
+    def get_config(self):
+        return {'means': self.means, 'scale': self.scale, 'minValues': self.minValues, 'maxValues': self.maxValues}
+
+
 #Layer that clamps the input values given to the network. Simplifies
 #deploying the network as it takes care of the clamping without need
 #to manually configure this to the framework (CMSSW)
@@ -49,7 +74,7 @@ class StandardScalerLayer(tf.keras.layers.Layer):
         super(StandardScalerLayer, self).build(input_shape)
 
     def call(self, input):
-        return tf.math.multiply((input - self.tensorMeans), self.invertedScale)
+        tf.math.multiply((input-self.tensorMeans), self.invertedScale)
 
     def get_config(self):
         return {'means': self.means, 'scale': self.scale}
@@ -64,8 +89,9 @@ def createClassifier(nInputs, means, scales, minValues, maxValues):
     _blocks = 5
     _rate = 0.1
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
-    x = ClampLayer(minValues, maxValues, name="Clamp")(inputs)
-    x = StandardScalerLayer(means, scales, name="Scale")(x)
+    x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
+    # x = ClampLayer(minValues, maxValues, name="Clamp")(inputs)
+    # x = StandardScalerLayer(means, scales, name="Scale")(x)
     for i in range(_blocks):
         x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer)(x)
         x =AlphaDropout(_rate)(x)
