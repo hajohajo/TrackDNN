@@ -88,13 +88,14 @@ def createClassifier(nInputs, means, scales, minValues, maxValues):
     _neurons = 256
     _blocks = 5
     _rate = 0.1
+    _rateRegularizer = 1e-5
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
     x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
     # x = ClampLayer(minValues, maxValues, name="Clamp")(inputs)
     # x = StandardScalerLayer(means, scales, name="Scale")(x)
     for i in range(_blocks):
-        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer)(x)
-        x =AlphaDropout(_rate)(x)
+        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
+#        x =AlphaDropout(_rate)(x)
     outputs = Dense(1, activation="sigmoid", name="classifierOutput")(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="classifier")
