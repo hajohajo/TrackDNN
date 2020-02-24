@@ -57,8 +57,8 @@ def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
     # _regularizer = tf.keras.regularizers.l2(1e-2)
     _activation = selu
-    _neurons = 32
-    _blocks = 20
+    _neurons = 256
+    _blocks = 5
     _rate = 0.1
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
     x = ClampLayer(minValues, maxValues, name="Clamp")
