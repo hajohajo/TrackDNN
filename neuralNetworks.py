@@ -92,8 +92,8 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
     _activation = serlu
-    _neurons = 64
-    _blocks = 10
+    _neurons = 32
+    _blocks = 3
     _rate = 0.1
     _rateRegularizer = 2e-5
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")

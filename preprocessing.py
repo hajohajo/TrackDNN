@@ -6,6 +6,11 @@ import numpy as np
 import pandas as pd
 import sys
 
+def smoothLabels(labels):
+    noise = np.random.exponential(0.1, labels.shape[0])
+    noise[labels==1] = -1.0*noise[labels==1]
+    return np.clip(labels + noise, 0.0, 1.0)
+
 def featureBalancingWeights(dataframe):
     transformedFrame = pd.DataFrame(PowerTransformer().fit_transform(dataframe.loc[:, inputVariables]), columns=inputVariables)
     totalSampleWeights = np.zeros(dataframe.shape[0])

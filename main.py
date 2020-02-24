@@ -7,7 +7,7 @@ import tensorflow as tf
 import numpy as np
 from utilities import createFolders, inputVariables
 from neuralNetworks import createClassifier, createFrozenModel
-from preprocessing import preprocessor, domainAdaptationWeights, featureBalancingWeights
+from preprocessing import preprocessor, domainAdaptationWeights, featureBalancingWeights, smoothLabels
 from plotting import createClassifierPlots
 pd.set_option('display.max_rows', 20)
 pd.set_option('display.max_columns', 50)
@@ -32,7 +32,8 @@ def main():
 
     path = "~/QCD_Flat_15_7000_correct/"
     QCDTrain = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
-    QCDTrain = QCDTrain.sample(n=10000)
+    QCDTrain = QCDTrain.sample(n=100000)
+
     weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
@@ -59,12 +60,18 @@ def main():
                        metrics=[tf.keras.metrics.AUC(name="auc")],
                        loss="binary_crossentropy")
 
-    print(weights)
+    labels = QCDTrain.loc[:, "trk_isTrue"]
+    noisyLabels = smoothLabels(labels)
+
+    import matplotlib.pyplot as plt
+    plt.hist(noisyLabels)
+    plt.show()
+
     classifier.fit(QCDTrainPreprocessed.to_numpy(),
-                   QCDTrain.loc[:, "trk_isTrue"],
+                   noisyLabels,
                    sample_weight=weights,
-                   epochs=20,
-                   batch_size=128,
+                   epochs=100,
+                   batch_size=1024,
                    # validation_split=0.5)
                    validation_split=0.1)
 
