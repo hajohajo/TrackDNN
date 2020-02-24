@@ -118,7 +118,8 @@ class preprocessor():
         clipped.loc[:, "trk_algo"] = dataframe.trk_algo
         # scaled = clipped.loc[:, dataframe.columns]
         scaled = pd.DataFrame(self.scaler.transform(clipped), columns=dataframe.columns.values)
-        return scaled
+        # return scaled
+        return dataframe
 
     def getMeansAndScales(self):
         means, scales = self.scaler.mean_, self.scaler.scale_

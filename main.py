@@ -46,8 +46,11 @@ def main():
     #The outputs of these printouts are to be used as the cutoff values when evaluating the
     #deployed model in CMSSW. See RecoTracker/FinalTrackSelectors/plugins/TrackTFClassifier.cc
     print(preproc.variableNamesToClip)
-    minValues = np.append(np.round(preproc.lowerThresholds.to_numpy()), 0)
-    maxValues = np.append(np.round(preproc.upperThresholds.to_numpy()), 9999)
+    # minValues = np.append(np.round(preproc.lowerThresholds.to_numpy()), 0)
+    # maxValues = np.append(np.round(preproc.upperThresholds.to_numpy()), 24)
+    minValues = np.append(preproc.lowerThresholds.to_numpy(), 0)
+    maxValues = np.append(preproc.upperThresholds.to_numpy(), 24)
+
     print("Upper cutoffs: ", maxValues.tolist())
     print("Lower cutoffs: ", minValues.tolist())
 

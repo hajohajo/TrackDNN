@@ -24,8 +24,8 @@ class InputSanitizerLayer(tf.keras.layers.Layer):
         self.means = means
         self.scale = scale
 
-        self.tensorMeans = tf.convert_to_tensor(np.reshape(self.means, (1, self.means.shape[-1])), dtype='float32')
-        self.invertedScale = tf.convert_to_tensor(1.0 / np.reshape(self.scale, (1, self.scale.shape[-1])), dtype='float32')
+        # self.tensorMeans = tf.convert_to_tensor(np.reshape(self.means, (1, self.means.shape[-1])), dtype='float32')
+        # self.invertedScale = tf.convert_to_tensor(1.0 / np.reshape(self.scale, (1, self.scale.shape[-1])), dtype='float32')
         self.tensorMins = tf.convert_to_tensor(np.reshape(self.minValues, (1, self.minValues.shape[-1])), dtype='float32')
         self.tensorMaxs = tf.convert_to_tensor(np.reshape(self.maxValues, (1, self.maxValues.shape[-1])), dtype='float32')
         super(InputSanitizerLayer, self).__init__(**kwargs)
@@ -34,7 +34,9 @@ class InputSanitizerLayer(tf.keras.layers.Layer):
         super(InputSanitizerLayer, self).build(input_shape)
 
     def call(self, input):
-        return tf.math.multiply((tf.math.maximum(tf.math.minimum(input, self.tensorMaxs), self.tensorMins)-self.tensorMeans), self.invertedScale)
+        values = tf.math.divide((tf.math.maximum(tf.math.minimum(input, self.tensorMaxs), self.tensorMins) - self.tensorMins), (self.tensorMaxs - self.tensorMins))
+        return values
+            # (tf.math.maximum(tf.math.minimum(input, self.tensorMaxs), self.tensorMins) - self.tensorMins) / (self.tensorMaxs - self.tensorMins)
 
     def get_config(self):
         return {'means': self.means, 'scale': self.scale, 'minValues': self.minValues, 'maxValues': self.maxValues}
@@ -95,10 +97,10 @@ def createClassifier(nInputs, means, scales, minValues, maxValues):
     _rate = 0.1
     _rateRegularizer = 2e-5
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
-    # x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
+    x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
     for i in range(_blocks):
-#        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
-        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(inputs)
+       x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
+    #     x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(inputs)
 
     outputs = Dense(1, activation="sigmoid", name="classifierOutput")(x)
 
