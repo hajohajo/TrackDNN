@@ -9,11 +9,14 @@ from tensorflow.keras.activations import selu
 def swish(x, beta = 1.0):
     return (x * tf.keras.activations.sigmoid(beta * x))
 
+#Activation function with self normalizing properties.
 scale = 1.07862
 alpha = 2.90427
 def serlu(x):
     return scale * tf.where(x >= 0.0, x, alpha * x * tf.exp(x))
 
+#Sanitizing layer that combines the clamping and standard scaling. Should be the first layer after Input.
+#expectes minValues, maxValues, means, scale to be ndarrays
 class InputSanitizerLayer(tf.keras.layers.Layer):
     def __init__(self, means, scale, minValues, maxValues, **kwargs):
         self.minValues = minValues
@@ -86,7 +89,6 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 #makes playing around with hyperparameters easier.
 def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
-    # _regularizer = tf.keras.regularizers.l2(1e-2)
     _activation = serlu
     _neurons = 256
     _blocks = 5
@@ -94,11 +96,8 @@ def createClassifier(nInputs, means, scales, minValues, maxValues):
     _rateRegularizer = 1e-5
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
     x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
-    # x = ClampLayer(minValues, maxValues, name="Clamp")(inputs)
-    # x = StandardScalerLayer(means, scales, name="Scale")(x)
     for i in range(_blocks):
         x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
-#        x =AlphaDropout(_rate)(x)
     outputs = Dense(1, activation="sigmoid", name="classifierOutput")(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="classifier")
