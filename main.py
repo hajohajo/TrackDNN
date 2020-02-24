@@ -32,8 +32,7 @@ def main():
 
     path = "~/QCD_Flat_15_7000_correct/"
     QCDTrain = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
-    # weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
-    weights = featureBalancingWeights(QCDTrain)
+    QCDTrain = QCDTrain.sample(n=10000)
     weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
@@ -46,21 +45,21 @@ def main():
     #The outputs of these printouts are to be used as the cutoff values when evaluating the
     #deployed model in CMSSW. See RecoTracker/FinalTrackSelectors/plugins/TrackTFClassifier.cc
     print(preproc.variableNamesToClip)
-    print("Upper cutoffs: ", np.round(preproc.upperThresholds.to_numpy(), 3).tolist())
-    print("Lower cutoffs: ", np.round(preproc.lowerThresholds.to_numpy(), 3).tolist())
+    minValues = np.append(np.round(preproc.lowerThresholds.to_numpy()), 0)
+    maxValues = np.append(np.round(preproc.upperThresholds.to_numpy()), 9999)
+    print("Upper cutoffs: ", maxValues.tolist())
+    print("Lower cutoffs: ", minValues.tolist())
 
-    classifier = createClassifier(len(QCDTrainPreprocessed.columns), means, scales)
-    # classifier.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3, amsgrad=True),
+    classifier = createClassifier(len(QCDTrainPreprocessed.columns), means, scales, minValues, maxValues)
     classifier.compile(optimizer=adam,
                        metrics=[tf.keras.metrics.AUC(name="auc")],
-                       # loss="mse")
-                       loss = "binary_crossentropy")
+                       loss="binary_crossentropy")
 
     print(weights)
     classifier.fit(QCDTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
-                   epochs=100,
+                   epochs=5,
                    batch_size=16384,
                    # validation_split=0.5)
                    validation_split = 0.1)
