@@ -9,7 +9,10 @@ from tensorflow.keras.activations import selu
 def swish(x, beta = 1.0):
     return (x * tf.keras.activations.sigmoid(beta * x))
 
-
+scale = 1.07862
+alpha = 2.90427
+def serlu(x):
+    return scale * tf.where(x >= 0.0, x, alpha * x * tf.exp(x))
 
 class InputSanitizerLayer(tf.keras.layers.Layer):
     def __init__(self, means, scale, minValues, maxValues, **kwargs):
@@ -84,7 +87,7 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
     # _regularizer = tf.keras.regularizers.l2(1e-2)
-    _activation = selu
+    _activation = serlu
     _neurons = 256
     _blocks = 5
     _rate = 0.1
