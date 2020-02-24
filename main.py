@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 from utilities import createFolders, inputVariables
 from neuralNetworks import createClassifier, createFrozenModel
-from preprocessing import preprocessor, domainAdaptationWeights
+from preprocessing import preprocessor, domainAdaptationWeights, featureBalancingWeights
 from plotting import createClassifierPlots
 pd.set_option('display.max_rows', 20)
 pd.set_option('display.max_columns', 50)
@@ -30,7 +30,8 @@ def main():
     path = "~/QCD_Flat_15_7000_correct/"
     QCDTrain = getSamples([path+"trackingNtuple.root", path+"trackingNtuple2.root", path+"trackingNtuple3.root", path+"trackingNtuple4.root"])
     # QCDTrain = QCDTrain.sample(n=100000)
-    weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
+    # weights = domainAdaptationWeights(QCDTrain, "datasets/T5qqqqWW.root")
+    weights = featureBalancingWeights(QCDTrain)
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
 
@@ -56,7 +57,7 @@ def main():
     classifier.fit(QCDTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
-                   epochs=20,
+                   epochs=5,
                    batch_size=16384,
                    # validation_split=0.5)
                    validation_split = 0.1)

@@ -17,4 +17,3 @@ def getSamples(listOfNames):
         dataframe = read_root(listOfNames, columns=columnsToRead)
 
     return dataframe
-

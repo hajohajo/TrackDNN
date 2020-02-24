@@ -9,6 +9,27 @@ from tensorflow.keras.activations import selu
 def swish(x, beta = 1.0):
     return (x * tf.keras.activations.sigmoid(beta * x))
 
+#Layer that clamps the input values given to the network. Simplifies
+#deploying the network as it takes care of the clamping without need
+#to manually configure this to the framework (CMSSW)
+class ClampLayer(tf.keras.layers.Layer):
+    def __init__(self, minValues, maxValues, **kwargs):
+        self.minValues = np.array(minValues)
+        self.maxValues = np.array(maxValues)
+        self.tensorMins = tf.convert_to_tensor(np.reshape(self.minValues, (1, self.minValues.shape[-1])), dtype='float32')
+        self.tensorMaxs = tf.convert_to_tensor(np.reshape(self.maxValues, (1, self.maxValues.shape[-1])), dtype='float32')
+        super(ClampLayer, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        super(ClampLayer, self).build(input_shape)
+
+    def call(self, input):
+        return tf.math.maximum(tf.math.minimum(input, self.tensorMaxs), self.tensorMins)
+
+    def get_config(self):
+        return {'minValues': self.minValues, 'maxValues': self.maxValues}
+
+
 #Implements standard scaling as the first layer of the network.
 #I.e. for each input it subracts the mean and divides by the standard deviation
 #The mean and std (=scale) are calculated from training set and used as input when
@@ -32,7 +53,7 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 
 #Convenience function to create the classifier network.
 #makes playing around with hyperparameters easier.
-def createClassifier(nInputs, means, scales):
+def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
     # _regularizer = tf.keras.regularizers.l2(1e-2)
     _activation = selu
@@ -40,7 +61,8 @@ def createClassifier(nInputs, means, scales):
     _blocks = 20
     _rate = 0.1
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
-    x = StandardScalerLayer(means, scales, name="Input")(inputs)
+    x = ClampLayer(minValues, maxValues, name="Clamp")
+    x = StandardScalerLayer(means, scales, name="Scale")(x)
     for i in range(_blocks):
         x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer)(x)
         x =AlphaDropout(_rate)(x)
