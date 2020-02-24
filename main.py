@@ -37,10 +37,11 @@ def main():
     preproc = preprocessor(0.05, 0.95)
     preproc.fit(QCDTrain.loc[:, inputVariables+["trk_algo"]])
 
-    # QCDTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
-    QCDTrainPreprocessed = QCDTrain.loc[:, inputVariables+["trk_algo"]]
+    QCDTrainPreprocessed = preproc.process(QCDTrain.loc[:, inputVariables+["trk_algo"]])
+    # QCDTrainPreprocessed = QCDTrain.loc[:, inputVariables+["trk_algo"]]
 
-    means, scales = preproc.getMeansAndScales()
+    # means, scales = preproc.getMeansAndScales()
+    means, scales = (0.0, 0.0)
 
     #The outputs of these printouts are to be used as the cutoff values when evaluating the
     #deployed model in CMSSW. See RecoTracker/FinalTrackSelectors/plugins/TrackTFClassifier.cc
@@ -59,10 +60,10 @@ def main():
     classifier.fit(QCDTrainPreprocessed.to_numpy(),
                    QCDTrain.loc[:, "trk_isTrue"],
                    sample_weight=weights,
-                   epochs=5,
-                   batch_size=16384,
+                   epochs=20,
+                   batch_size=128,
                    # validation_split=0.5)
-                   validation_split = 0.1)
+                   validation_split=0.1)
 
     #Saving model in case later need for additional plotting arises
     classifier.save('./model.h5')

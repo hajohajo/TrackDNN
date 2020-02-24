@@ -1,4 +1,4 @@
-from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler
 from sklearn.utils import compute_sample_weight
 from utilities import inputVariables
 from rootFileReader import getSamples
@@ -95,7 +95,8 @@ class preprocessor():
     def __init__(self, lowerQuantile=0.1, upperQuantile=0.9):
         self.lowerQuantile = lowerQuantile
         self.upperQuantile = upperQuantile
-        self.scaler = StandardScaler()
+        # self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
         self.fitCalled = False
 
     def fit(self, dataframe):
@@ -115,7 +116,8 @@ class preprocessor():
         clipped = dataframe.loc[:, inputVariables].clip(self.lowerThresholds, self.upperThresholds, axis=1)
 
         clipped.loc[:, "trk_algo"] = dataframe.trk_algo
-        scaled = clipped.loc[:, dataframe.columns]
+        # scaled = clipped.loc[:, dataframe.columns]
+        scaled = pd.DataFrame(self.scaler.transform(clipped), columns=dataframe.columns.values)
         return scaled
 
     def getMeansAndScales(self):

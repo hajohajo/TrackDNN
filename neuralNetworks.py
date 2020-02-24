@@ -90,14 +90,16 @@ class StandardScalerLayer(tf.keras.layers.Layer):
 def createClassifier(nInputs, means, scales, minValues, maxValues):
     _initializer = "lecun_normal"
     _activation = serlu
-    _neurons = 256
-    _blocks = 5
+    _neurons = 64
+    _blocks = 10
     _rate = 0.1
-    _rateRegularizer = 1e-5
+    _rateRegularizer = 2e-5
     inputs = tf.keras.Input(shape=(nInputs), name="classifierInput")
-    x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
+    # x = InputSanitizerLayer(means, scales, minValues, maxValues)(inputs)
     for i in range(_blocks):
-        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
+#        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(x)
+        x = Dense(_neurons, activation=_activation, kernel_initializer=_initializer, activity_regularizer=tf.keras.regularizers.l1_l2(_rateRegularizer))(inputs)
+
     outputs = Dense(1, activation="sigmoid", name="classifierOutput")(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="classifier")
