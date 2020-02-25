@@ -18,7 +18,7 @@ def createClassifierPlots(classifier, preproc):
 
         createBinnedMeanPlot(sample, 'trk_pt', 'trk_dnn', np.logspace(-1, 3), name+"MVAVsPt")
         createROCplot(sample, name)
-        createMVAHistogram(sample, name)
+        createMVADistribution(sample, name)
 
 def createROCplot(dataframe, name):
     for step in np.append(np.unique(dataframe.trk_algo), 99):
@@ -75,34 +75,20 @@ def createBinnedMeanPlot(dataframe, xvariable, yvariable, binning, name):
             plt.savefig("./plots/"+name+"_"+truthLabel+"_"+Algo.toString(step)+".pdf")
             plt.clf()
 
-def createMVAHistogram(dataframe, name):
+def createMVADistribution(dataframe, name):
     binning = np.linspace(-1.0, 1.0, 41)
-    binWidth = (binning[-1]-binning[-2])/2.0
-    binCenters = binning[:-1]+binWidth
+    for step in np.unique(dataframe.trk_algo):
+        trueTracks = (dataframe.trk_algo == step) & (dataframe.trk_isTrue == 1)
+        fakeTracks = (dataframe.trk_algo == step) & (dataframe.trk_isTrue == 0)
 
-    digitizedIndices = np.digitize(dataframe.trk_dnn, bins=binning)-1
-    for isTrue in [0, 1]:
-        if isTrue:
-            truthLabel = "True"
-        else:
-            truthLabel = "Fake"
-        for step in np.unique(dataframe.trk_algo):
-            binContent = np.zeros(len(binning)-1)
-            for i in range(len(binning)-1):
-                entriesMask = (digitizedIndices == i) & (dataframe.trk_algo == step) & (dataframe.trk_isTrue == isTrue)
-                sum = np.sum(entriesMask)
-                if(sum==0):
-                    binContent[i] = 1
-                else:
-                    binContent[i] = np.sum(entriesMask)
+        plt.hist(dataframe.loc[trueTracks, "trk_dnn"], bins=binning, label="True", density=True, alpha=0.7, edgecolor='black', linewidth=1.0)
+        plt.hist(dataframe.loc[fakeTracks, "trk_dnn"], bins=binning, label="Fake", density=True, alpha=0.7, edgecolor='black', linewidth=1.0)
 
-            plt.errorbar(binCenters, binContent, fmt='*', label="BDT")
-            plt.errorbar(binCenters, binContent, fmt='*', label="DNN")
-            plt.legend()
-            plt.title(name+" "+Algo.toString(step)+", "+truthLabel+" tracks")
-            plt.xlabel("MVA output")
-            plt.ylabel("N tracks")
-            plt.yscale('log')
-            plt.ylim(1, np.max(binContent)+1e3)
-            plt.savefig("./plots/"+name+"_"+Algo.toString(step)+"_"+truthLabel+"_MVA.pdf")
-            plt.clf()
+        plt.legend()
+        plt.xlabel("MVA output")
+        plt.ylabel("Normalized tracks")
+        plt.title("MVA distribution")
+
+        plt.savefig("./plots/"+name+"_"+Algo.toString(step)+"_MVADistribution.pdf")
+        plt.clf()
+
