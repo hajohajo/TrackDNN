@@ -8,7 +8,10 @@ import sys
 
 def smoothLabels(labels):
     noise = np.random.exponential(0.1, labels.shape[0])
-    noise[labels==1] = -1.0*noise[labels==1]
+    index = (np.random.sample(labels.shape[0]) > 0.5)
+    noise = np.subtract(noise, np.min(noise))
+    noise[labels == 1] = -1.0*noise[labels == 1]
+    noise[index == 1] = 0.0
     return np.clip(labels + noise, 0.0, 1.0)
 
 def featureBalancingWeights(dataframe):
