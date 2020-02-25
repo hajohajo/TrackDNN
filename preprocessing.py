@@ -7,12 +7,55 @@ import pandas as pd
 import sys
 
 def smoothLabels(labels):
-    noise = np.random.exponential(0.1, labels.shape[0])
+    noise = np.random.exponential(0.3, labels.shape[0])
     index = (np.random.sample(labels.shape[0]) > 0.5)
     noise = np.subtract(noise, np.min(noise))
     noise[labels == 1] = -1.0*noise[labels == 1]
     noise[index == 1] = 0.0
     return np.clip(labels + noise, 0.0, 1.0)
+
+def ptFakerateFlatteningWeights(dataframe):
+    nEntries = dataframe.shape[0]
+    # binning = np.linspace(0.0, 1000.0, 21)
+    binning = np.logspace(0.0, 3, 11)
+
+    trueIndices = dataframe.trk_isTrue == 1
+    fakeIndices = dataframe.trk_isTrue == 0
+    pt = np.clip(dataframe.loc[:, "trk_pt"], binning[0], binning[-1]-1e-3)
+    digitizedIndices = np.digitize(pt, binning, right=True)
+
+    #Fix the discrepancy
+    digitizedIndices[digitizedIndices == 0] = 1
+    digitizedIndices = digitizedIndices - 1
+
+    binnedSignal = np.ones(len(binning))
+    binnedBackground = np.ones(len(binning))
+
+    for i in np.unique(digitizedIndices):
+        binnedSignal[i] = np.sum(digitizedIndices[trueIndices] == i)
+        binnedBackground[i] = np.sum(digitizedIndices[fakeIndices] == i)
+
+    binnedTotal = np.add(binnedSignal, binnedBackground)
+
+    binMultipliers = np.divide(nEntries/len(binning), binnedTotal)
+
+    sigMultipliers = np.divide(binnedTotal, 2.0*binnedSignal)
+    bkgMultipliers = np.divide(binnedTotal, 2.0*binnedBackground)
+
+    sigMultipliers = np.multiply(sigMultipliers, binMultipliers)
+    bkgMultipliers = np.multiply(bkgMultipliers, binMultipliers)
+
+    sampleWeights = np.zeros(nEntries)
+    sampleWeights[trueIndices] = sigMultipliers[digitizedIndices[trueIndices]]
+    sampleWeights[fakeIndices] = bkgMultipliers[digitizedIndices[fakeIndices]]
+
+    import matplotlib.pyplot as plt
+    plt.hist(pt[trueIndices], binning, weights=sampleWeights[trueIndices], label="true", alpha=0.8)
+    plt.hist(pt[fakeIndices], binning, weights=sampleWeights[fakeIndices], label="fake", alpha=0.8)
+    plt.xscale("log")
+    plt.show()
+
+    return sampleWeights
 
 def featureBalancingWeights(dataframe):
     transformedFrame = pd.DataFrame(PowerTransformer().fit_transform(dataframe.loc[:, inputVariables]), columns=inputVariables)
